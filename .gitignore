@@ -1,0 +1,10 @@
+.DS_Store
+*.pdf
+bin
+*.exe
+*.out
+*.o
+.vscode
+*.zip
+A1/pic/test.ppm
+A1/pic/test.png
