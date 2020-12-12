@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     car.init(2);
 
     gl_init(argc, argv);
+    lighter.init();  // Must be placed after Shade model set
 
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -55,8 +56,7 @@ void gl_init(int argc, char **argv) {
     glutInitWindowSize(900, 600);
     glutCreateWindow("Apocalypse System");
     glClearColor(0., 0., 0., 0.);
-    // glShadeModel(GL_FLAT);
-    lighter.init();
+    glShadeModel(GL_FLAT);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -81,10 +81,12 @@ void display() {
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(10, 0, 0);
+    lighter.enable();
+    glTranslatef(4, 0, 0);
     glScalef(0.5, 0.5, 0.5);
-    car.drawUp(&lighter);
-    // car.drawDown(&lighter);
+    car.drawUp();
+    car.drawDown();
+    lighter.disable();
     glPopMatrix();
 
     glFlush();
@@ -106,15 +108,16 @@ void reshape(int w, int h) {
 void keyboard(unsigned char key, int x, int y) {
     bool changed = 1;
     switch (key) {
-        case 'w': camera.moveForward(); break;
-        case 's': camera.moveBackward(); break;
+        case 'w': camera.moveUp(); break;
+        case 's': camera.moveDown(); break;
         case 'a': camera.moveLeft(); break;
         case 'd': camera.moveRight(); break;
+        case 'q': camera.moveBackward(); break;
+        case 'e': camera.moveForward(); break;
         case 'h': camera.rotateLeft(); break;
         case 'j': camera.rotateDown(); break;
         case 'k': camera.rotateUp(); break;
         case 'l': camera.rotateRight(); break;
-        case 'q': exit(0); break;
         case 27: exit(0); break;
         default: changed = 0; break;
     }
