@@ -5,7 +5,7 @@
  * @brief This is an implementation to A4 of CG by prof. Hongzhi Wu
  *
  * @ref http://cse.csusb.edu/tongyu/courses/cs621/notes/color.php
- *
+ * @ref https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glLight.xml
  */
 #include "SolarSys.h"
 
@@ -13,22 +13,24 @@ cameraObj camera;
 std::vector<celestialObj> starVec;
 
 lighterObj lighter(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular);
+
+lighterObj lighter_sun(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular, 0);
 // carObj car;
 
 int main(int argc, char *argv[]) {
     // radius, distance, rotateV, revolveV, rotateTilt, revolveTilt, r, g, b
     starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0);        // sun
     starVec.emplace_back(0.4, 3, -3, -2, 10., 23.5, 0, 0, 255);   // earth
-    starVec.emplace_back(0.1, 0.8, 9, 3, 0, 0., 255, 255, 255);   // moon
-    starVec.emplace_back(1.1, 10, 1, 2, -45., 60., 0, 255, 0);    // jupyter
-    starVec.emplace_back(0.5, 1.9, 5, 3, 80., 10., 255, 255, 0);  // europa
-    starVec.emplace_back(0.2, 1, 10, 3, 20., 90., 255, 0, 255);   // something
+    starVec.emplace_back(0.18, 0.8, 9, 3, 0, 0., 255, 255, 255);  // moon
+    starVec.emplace_back(0.8, 10, 2, 2, -45., 60., 0, 255, 0);     // jupyter
+    starVec.emplace_back(0.5, 2.9, 3, 3, 80., 10., 255, 255, 0);  // europa
+    starVec.emplace_back(0.2, 1, 5, 3, 20., 90., 255, 0, 255);    // satellite
 
     // car.initNurbs(2);
 
     gl_init(argc, argv);
 
-    // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
@@ -57,27 +59,59 @@ void gl_init(int argc, char **argv) {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    lighter.reset(mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
-
+    // Sun
     glPushMatrix();
-    lighter.enable();
+    lighter_sun.reset(mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
+    lighter_sun.enable();
     starVec[0].draw();
-    lighter.disable();
+    lighter_sun.disable();
     glPopMatrix();
 
+    // Earth & Moon
     lighter.reset(
         mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
-    glPushMatrix();
     lighter.enable();
+    glPushMatrix();
     starVec[1].draw();
+    glPopMatrix();
     lighter.disable();
+
+    lighter.reset(mat_ambient_moon, mat_diffuse_moon, mat_specular_moon, mat_shininess_moon);
+    lighter.enable();
+    glPushMatrix();
+    starVec[1].draw();
     starVec[2].draw();
     glPopMatrix();
+    lighter.disable();
 
+    // Jupyter
+    lighter.reset(mat_ambient_jupyter, mat_diffuse_jupyter, mat_specular_jupyter,
+        mat_shininess_jupyter);
+    lighter.enable();
+    glPushMatrix();
+    starVec[3].draw();
+    glPopMatrix();
+    lighter.disable();
+
+    // Europa
+    lighter.reset(
+        mat_ambient_europa, mat_diffuse_europa, mat_specular_europa, mat_shininess_europa);
+    lighter.enable();
+    glPushMatrix();
+    starVec[3].draw();
+    starVec[4].draw();
+    glPopMatrix();
+    lighter.disable();
+
+    // Satellite
+    lighter.reset(mat_ambient_satellite, mat_diffuse_satellite, mat_specular_satellite,
+        mat_shininess_satellite);
+    lighter.enable();
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
     starVec[5].draw();
+    lighter.disable();
     glPopMatrix();
 
     // glPushMatrix();

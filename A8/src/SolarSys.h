@@ -21,7 +21,7 @@ const double D2R = PI / 180;
 /* Global Parameter Def */
 // #define USING_WIRE  // Comment to use glutSolidSphere
 
-const int spehereLineRatio   = 50;    // Control wire number of sphere
+const int spehereLineRatio   = 100;   // Control wire number of sphere
 const int fluentRatio        = 2;     // The higher the value, the more fulent the animation
 const double cam_move_step   = 0.25;  // Move step of camera using WSAD
 const double cam_rotate_step = 1;     // Rotate step of camera using HJKL, in unit of degree
@@ -30,19 +30,39 @@ const double fovy            = 68;    // View volumn: angle of view
 const double zNear           = 0.01;  // View volume: distance to near clipping plane
 const double zFar            = 100;   // View volume: distance to far clipping plane
 
-const GLfloat light_ambient[]  = {0, .0, 0, .1};
+const GLfloat light_ambient[]  = {.5, .5, 0, .1};
 const GLfloat light_diffuse[]  = {.5, .5, .5, .5};
 const GLfloat light_specular[] = {.2, 0, .5, .5};
 
-const GLfloat mat_ambient_sun[]  = {1.0, 0.6, 0.0, 0.4};
-const GLfloat mat_diffuse_sun[]  = {1., 0., 0.0, 0.6};
-const GLfloat mat_specular_sun[] = {0.6, 0.6, 0.6, 0.2};
+const GLfloat mat_ambient_sun[]  = {.9, 0.3, 0.0, 0.9};
+const GLfloat mat_diffuse_sun[]  = {.9, 0.3, 0.0, 0.9};
+const GLfloat mat_specular_sun[] = {0.2, 0.2, 0.2, 0.2};
 const GLfloat mat_shininess_sun  = 11.0;
 
-const GLfloat mat_ambient_earth[]  = {0, 0, .8, .4};
-const GLfloat mat_diffuse_earth[]  = {0, 0, .8, .6};
-const GLfloat mat_specular_earth[] = {.6, .6, .6, .2};
+const GLfloat mat_ambient_earth[]  = {.2, .2, .6, .4};
+const GLfloat mat_diffuse_earth[]  = {.2, .2, .6, .6};
+const GLfloat mat_specular_earth[] = {.1, .1, .1, .2};
 const GLfloat mat_shininess_earth  = 5.0;
+
+const GLfloat mat_ambient_moon[]  = {.8, .8, .8, .4};
+const GLfloat mat_diffuse_moon[]  = {.8, .8, .8, .6};
+const GLfloat mat_specular_moon[] = {.1, .1, .1, .2};
+const GLfloat mat_shininess_moon  = 3.0;
+
+const GLfloat mat_ambient_jupyter[]  = {.7, .5, .5, .4};
+const GLfloat mat_diffuse_jupyter[]  = {.7, .5, .5, .4};
+const GLfloat mat_specular_jupyter[] = {.1, .1, .1, .8};
+const GLfloat mat_shininess_jupyter  = 3.0;
+
+const GLfloat mat_ambient_europa[]  = {.6, .5, .3, .4};
+const GLfloat mat_diffuse_europa[]  = {.6, .5, .3, .4};
+const GLfloat mat_specular_europa[] = {.1, .1, .1, .2};
+const GLfloat mat_shininess_europa  = 1.0;
+
+const GLfloat mat_ambient_satellite[]  = {1, .5, .5, .4};
+const GLfloat mat_diffuse_satellite[]  = {1, .5, .5, .4};
+const GLfloat mat_specular_satellite[] = {.6, .6, .6, .2};
+const GLfloat mat_shininess_satellite  = 1.0;
 
 void gl_init(int argc, char **argv);
 void display(void);
@@ -167,6 +187,7 @@ class celestialObj {
     }
 };
 
+extern cameraObj camera;
 /**
  * @class
  *
@@ -175,29 +196,37 @@ class lighterObj {
   private:
     GLfloat pos[4] = {0, 0, 0, 1};
     int light_src;
+    bool spot_light;
 
   public:
     lighterObj(int light_src, GLfloat x, GLfloat y, GLfloat z, const GLfloat *light_ambient,
-        const GLfloat *light_diffuse, const GLfloat *light_specular)
-        : light_src(light_src) {
-        pos[0] = x;
-        pos[1] = y;
-        pos[2] = z;
+        const GLfloat *light_diffuse, const GLfloat *light_specular, bool spot_light = 1)
+        : light_src(light_src), spot_light(spot_light) {
+        this->pos[0] = x;
+        this->pos[1] = y;
+        this->pos[2] = z;
 
+        glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+        glLightfv(light_src, GL_POSITION, pos);
         glLightfv(light_src, GL_AMBIENT, light_ambient);
         glLightfv(light_src, GL_DIFFUSE, light_diffuse);
         glLightfv(light_src, GL_SPECULAR, light_specular);
-        glLightfv(light_src, GL_POSITION, pos);
     }
     void reset(const GLfloat *mat_ambient, const GLfloat *mat_diffuse,
         const GLfloat *mat_specular, const GLfloat mat_shininess) {
-
-        // glClearColor(0.0, 0.0, 0.0, 0.0);
-
-        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
+        static GLfloat eyepos[] = {0, 0, 0, 0};  // eyepos[3] = 0 to set parallel light
+        if (spot_light)
+            glLightfv(light_src, GL_POSITION, pos);
+        else {
+            eyepos[0] = camera.eyex;
+            eyepos[1] = camera.eyey;
+            eyepos[2] = camera.eyez;
+            glLightfv(light_src, GL_POSITION, eyepos);
+        }
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
     }
 
     void enable(void) {
