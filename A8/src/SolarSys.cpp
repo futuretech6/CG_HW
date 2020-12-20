@@ -12,9 +12,10 @@
 cameraObj camera;
 std::vector<celestialObj> starVec;
 
-lighterObj lighter(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular);
+lighterObj lighter_point(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular);
 
-lighterObj lighter_sun(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular, 0);
+lighterObj lighter_parallel(
+    GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular, 0);
 // carObj car;
 
 int main(int argc, char *argv[]) {
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
     starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0);        // sun
     starVec.emplace_back(0.4, 3, -3, -2, 10., 23.5, 0, 0, 255);   // earth
     starVec.emplace_back(0.18, 0.8, 9, 3, 0, 0., 255, 255, 255);  // moon
-    starVec.emplace_back(0.8, 10, 2, 2, -45., 60., 0, 255, 0);     // jupyter
+    starVec.emplace_back(0.8, 10, 2, 2, -45., 60., 0, 255, 0);    // jupyter
     starVec.emplace_back(0.5, 2.9, 3, 3, 80., 10., 255, 255, 0);  // europa
     starVec.emplace_back(0.2, 1, 5, 3, 20., 90., 255, 0, 255);    // satellite
 
@@ -61,57 +62,59 @@ void display() {
 
     // Sun
     glPushMatrix();
-    lighter_sun.reset(mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
-    lighter_sun.enable();
+    lighter_parallel.reset(
+        mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
+    lighter_parallel.enable();
     starVec[0].draw();
-    lighter_sun.disable();
+    lighter_parallel.disable();
     glPopMatrix();
 
     // Earth & Moon
-    lighter.reset(
+    lighter_point.reset(
         mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
-    lighter.enable();
+    lighter_point.enable();
     glPushMatrix();
     starVec[1].draw();
     glPopMatrix();
-    lighter.disable();
+    lighter_point.disable();
 
-    lighter.reset(mat_ambient_moon, mat_diffuse_moon, mat_specular_moon, mat_shininess_moon);
-    lighter.enable();
+    lighter_point.reset(
+        mat_ambient_moon, mat_diffuse_moon, mat_specular_moon, mat_shininess_moon);
+    lighter_point.enable();
     glPushMatrix();
     starVec[1].draw();
     starVec[2].draw();
     glPopMatrix();
-    lighter.disable();
+    lighter_point.disable();
 
     // Jupyter
-    lighter.reset(mat_ambient_jupyter, mat_diffuse_jupyter, mat_specular_jupyter,
+    lighter_point.reset(mat_ambient_jupyter, mat_diffuse_jupyter, mat_specular_jupyter,
         mat_shininess_jupyter);
-    lighter.enable();
+    lighter_point.enable();
     glPushMatrix();
     starVec[3].draw();
     glPopMatrix();
-    lighter.disable();
+    lighter_point.disable();
 
     // Europa
-    lighter.reset(
+    lighter_point.reset(
         mat_ambient_europa, mat_diffuse_europa, mat_specular_europa, mat_shininess_europa);
-    lighter.enable();
+    lighter_point.enable();
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
     glPopMatrix();
-    lighter.disable();
+    lighter_point.disable();
 
     // Satellite
-    lighter.reset(mat_ambient_satellite, mat_diffuse_satellite, mat_specular_satellite,
+    lighter_point.reset(mat_ambient_satellite, mat_diffuse_satellite, mat_specular_satellite,
         mat_shininess_satellite);
-    lighter.enable();
+    lighter_point.enable();
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
     starVec[5].draw();
-    lighter.disable();
+    lighter_point.disable();
     glPopMatrix();
 
     // glPushMatrix();
