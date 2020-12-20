@@ -12,7 +12,8 @@
 cameraObj camera;
 std::vector<celestialObj> starVec;
 
-carObj car;
+lighterObj lighter(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular);
+// carObj car;
 
 int main(int argc, char *argv[]) {
     // radius, distance, rotateV, revolveV, rotateTilt, revolveTilt, r, g, b
@@ -23,11 +24,11 @@ int main(int argc, char *argv[]) {
     starVec.emplace_back(0.5, 1.9, 5, 3, 80., 10., 255, 255, 0);  // europa
     starVec.emplace_back(0.2, 1, 10, 3, 20., 90., 255, 0, 255);   // something
 
-    car.initNurbs(2);
+    // car.initNurbs(2);
 
     gl_init(argc, argv);
 
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    // glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
@@ -56,14 +57,20 @@ void gl_init(int argc, char **argv) {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glPushMatrix();
-    lighter_sun.enable();
-    starVec[0].draw();
-    lighter_sun.disable();
-    glPopMatrix();
+    lighter.reset(mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
 
     glPushMatrix();
+    lighter.enable();
+    starVec[0].draw();
+    lighter.disable();
+    glPopMatrix();
+
+    lighter.reset(
+        mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
+    glPushMatrix();
+    lighter.enable();
     starVec[1].draw();
+    lighter.disable();
     starVec[2].draw();
     glPopMatrix();
 
@@ -73,14 +80,14 @@ void display() {
     starVec[5].draw();
     glPopMatrix();
 
-    glPushMatrix();
-    car.trans();
-    glScalef(0.5, 0.5, 0.5);
-    glTranslatef(-4.5, -1.5, 0);
-    car.draw();
-    glPopMatrix();
+    // glPushMatrix();
+    // car.trans();
+    // glScalef(0.5, 0.5, 0.5);
+    // glTranslatef(-4.5, -1.5, 0);
+    // car.draw();
+    // glPopMatrix();
 
-    glFlush();
+    // glFlush();
 
     glutSwapBuffers();
 }
@@ -152,44 +159,44 @@ void mouseMove(int x, int y) {
 void idle() {
     for (auto &i : starVec)
         i.rotate();
-    car.rotate();
+    // car.rotate();
     glutPostRedisplay();
     Sleep(30 / fluentRatio);
 }
 
-void draw_cylinder(GLfloat radius, GLfloat height, GLubyte R, GLubyte G, GLubyte B) {
-    GLfloat x                    = 0.0;
-    GLfloat y                    = 0.0;
-    const GLfloat angle_stepsize = 0.1;
+// void draw_cylinder(GLfloat radius, GLfloat height, GLubyte R, GLubyte G, GLubyte B) {
+//     GLfloat x                    = 0.0;
+//     GLfloat y                    = 0.0;
+//     const GLfloat angle_stepsize = 0.1;
 
-    /** Draw the tube */
-    glColor3ub(R, G, B);
-    glBegin(GL_QUAD_STRIP);
-    for (GLfloat angle = 0.0; angle <= 2 * PI + angle_stepsize; angle += angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, 0.5 * height);
-        glVertex3f(x, y, -0.5 * height);
-    }
-    glEnd();
+//     /** Draw the tube */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_QUAD_STRIP);
+//     for (GLfloat angle = 0.0; angle <= 2 * PI + angle_stepsize; angle += angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, 0.5 * height);
+//         glVertex3f(x, y, -0.5 * height);
+//     }
+//     glEnd();
 
-    /** Draw the circle on top of cylinder */
-    glColor3ub(R, G, B);
-    glBegin(GL_POLYGON);
-    for (GLfloat angle = 0.0; angle <= 2 * PI; angle += angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, 0.5 * height);
-    }
-    glEnd();
+//     /** Draw the circle on top of cylinder */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_POLYGON);
+//     for (GLfloat angle = 0.0; angle <= 2 * PI; angle += angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, 0.5 * height);
+//     }
+//     glEnd();
 
-    /** Draw the circle on bottom of cylinder */
-    glColor3ub(R, G, B);
-    glBegin(GL_POLYGON);
-    for (GLfloat angle = 2 * PI; angle >= 0; angle -= angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, -0.5 * height);
-    }
-    glEnd();
-}
+//     /** Draw the circle on bottom of cylinder */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_POLYGON);
+//     for (GLfloat angle = 2 * PI; angle >= 0; angle -= angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, -0.5 * height);
+//     }
+//     glEnd();
+// }
