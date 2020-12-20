@@ -4,24 +4,14 @@
  * @em 3180103012@zju.edu.cn
  * @brief This is an implementation to A4 of CG by prof. Hongzhi Wu
  *
- * @ref glMatrix(): https://community.khronos.org/t/glpushmatrix-glpopmatrix/20189/2
- * @ref glRotatef(): axis from the origin through the point (x, y, z).
- * @ref gluLookAt():
- *      https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
- * @ref spherical coordinate:
- *      https://zh.wikipedia.org/wiki/%E7%90%83%E5%BA%A7%E6%A8%99%E7%B3%BB
- * @ref object hidding: https://blog.csdn.net/Wadejr/article/details/7489928
- * @ref lighting: http://www.csc.villanova.edu/~mdamian/Past/graphicssp13/notes/lightlab.pdf
- * @ref lighting: https://www.glprogramming.com/red/chapter05.html
- * @ref gluNurbsSurface:
- * https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/gluNurbsSurface.xml
+ * @ref http://cse.csusb.edu/tongyu/courses/cs621/notes/color.php
+ *
  */
 #include "SolarSys.h"
 
 cameraObj camera;
 std::vector<celestialObj> starVec;
 
-lighterObj lighter1, lighter2;
 carObj car;
 
 int main(int argc, char *argv[]) {
@@ -33,10 +23,9 @@ int main(int argc, char *argv[]) {
     starVec.emplace_back(0.5, 1.9, 5, 3, 80., 10., 255, 255, 0);  // europa
     starVec.emplace_back(0.2, 1, 10, 3, 20., 90., 255, 0, 255);   // something
 
-    car.init(2);
+    car.initNurbs(2);
 
     gl_init(argc, argv);
-    lighter1.init(0, 0, 1);  // Must be placed after Shade model set
 
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -68,7 +57,9 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();
+    lighter_sun.enable();
     starVec[0].draw();
+    lighter_sun.disable();
     glPopMatrix();
 
     glPushMatrix();
@@ -83,19 +74,10 @@ void display() {
     glPopMatrix();
 
     glPushMatrix();
-    lighter1.enable();
-
     car.trans();
     glScalef(0.5, 0.5, 0.5);
     glTranslatef(-4.5, -1.5, 0);
-
-    car.drawUp();
-    car.drawDown();
-    car.drawTires();
-    car.drawSpoiler();
-    car.drawCockpit();
-
-    lighter1.disable();
+    car.draw();
     glPopMatrix();
 
     glFlush();

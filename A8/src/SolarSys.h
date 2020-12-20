@@ -15,29 +15,47 @@
 #include <tuple>
 #include <vector>
 
-const double pi  = 3.1425927;
-const double D2R = pi / 180;
+const double PI  = 3.1425927;
+const double D2R = PI / 180;
 
 /* Global Parameter Def */
-#define USING_WIRE  // Comment to use glutSolidSphere
+// #define USING_WIRE  // Comment to use glutSolidSphere
 
-const int spehereLineRatio   = 25;    // Control wire number of sphere
+const int spehereLineRatio   = 50;    // Control wire number of sphere
 const int fluentRatio        = 2;     // The higher the value, the more fulent the animation
 const double cam_move_step   = 0.25;  // Move step of camera using WSAD
 const double cam_rotate_step = 1;     // Rotate step of camera using HJKL, in unit of degree
 const double PRP_VRP_Dist    = 10;    // Distance from PRP to VRP
 const double fovy            = 68;    // View volumn: angle of view
-const double zNear           = 0.1;   // View volume: distance to near clipping plane
+const double zNear           = 0.01;  // View volume: distance to near clipping plane
 const double zFar            = 100;   // View volume: distance to far clipping plane
 
-const GLfloat light_position0[] = {0, 0, 0, 1.0};
-const GLfloat light_ambient[]   = {0.5, 0.5, 0.5, 0.5};
-const GLfloat light_diffuse[]   = {0.5, 0.5, 0.5, 0.5};
-const GLfloat light_specular[]  = {0.5, 0.5, 0.5, 0.5};
-const GLfloat mat_specular[]    = {1.0, 1.0, 1.0, 1.0}; /* bright white */
-const GLfloat mat_diffuse[]     = {1.0, 0.5, 0.0, 1.0}; /* orange color */
-const GLfloat mat_ambient[]     = {1.0, 0.5, 0.0, 1.0}; /* same as diffuse */
-const GLfloat mat_shininess     = 5.0;
+const GLfloat light_ambient_sun[]  = {1, 0.5, 0, 0.5};
+const GLfloat light_diffuse_sun[]  = {0, 0.5, 1, 0.5};
+const GLfloat light_specular_sun[] = {0.5, 0, 0.5, 0.5};
+const GLfloat mat_ambient_sun[]    = {1.0, 0.6, 0.0, 0.4}; /* same as diffuse */
+const GLfloat mat_diffuse_sun[]    = {1., 0.5, 0.0, 0.6};  /* orange color */
+const GLfloat mat_specular_sun[]   = {0.6, 0.6, 0.6, 0.2}; /* white */
+const GLfloat mat_shininess_sun    = 5.0;
+
+const GLfloat light_ambient_earth[]  = {1, 0.5, 0, 0.5};
+const GLfloat light_diffuse_earth[]  = {0, 0.5, 1, 0.5};
+const GLfloat light_specular_earth[] = {0.5, 0, 0.5, 0.5};
+const GLfloat mat_ambient_earth[]    = {1.0, 0.6, 0.0, 0.4}; /* same as diffuse */
+const GLfloat mat_diffuse_earth[]    = {1., 0.5, 0.0, 0.6};  /* orange color */
+const GLfloat mat_specular_earth[]   = {0.6, 0.6, 0.6, 0.2}; /* white */
+const GLfloat mat_shininess_earth    = 5.0;
+
+void gl_init(int argc, char **argv);
+void display(void);
+void reshape(int w, int h);
+void keyboard(unsigned char key, GLint x, GLint y);
+void keyboard_special(GLint key, GLint x, GLint y);
+void mouseButton(int button, int state, int x, int y);
+void mouseMove(int x, int y);
+void idle();
+void draw_cylinder(
+    GLfloat radius, GLfloat height, GLubyte R = 255, GLubyte G = 255, GLubyte B = 255);
 
 /**
  * @class an implenetation of camera with all its parameter and movement function
@@ -98,7 +116,7 @@ class cameraObj {
  * and other smaller objects
  */
 class celestialObj {
-  public:
+  private:
     // Const parameters
     float radius;
     float distance;  // distance from center
@@ -112,6 +130,7 @@ class celestialObj {
     float rotateAngle  = 0;
     float revolveAngle = 0;
 
+  public:
     // Functions
     celestialObj(float radius, float distance, float rotateV, float revolveV,
         float rotateTilt, float revolveTilt, int r, int g, int b)
@@ -123,15 +142,18 @@ class celestialObj {
           revolveTilt(revolveTilt),
           colors(std::make_tuple(r, g, b)){};
 
-    void draw() {
+    void trans(void) {
         using namespace std;
-        glColor3f(get<0>(colors) / 255., get<1>(colors) / 255., get<2>(colors) / 255.);
         glTranslatef(distance * cos(rotateTilt * D2R) * cos(rotateAngle * D2R),
             distance * cos(rotateTilt * D2R) * sin(rotateAngle * D2R),
             distance * sin(rotateTilt * D2R) * cos(rotateAngle * D2R));
         glRotatef(revolveAngle, -sin(revolveTilt * D2R), 0., cos(revolveTilt * D2R));
         glRotatef(revolveTilt, 0., -1., 0.);  // First rotate to tile angle
-
+    }
+    void draw() {
+        using namespace std;
+        trans();
+        glColor3f(get<0>(colors) / 255., get<1>(colors) / 255., get<2>(colors) / 255.);
 #ifdef USING_WIRE
         glutWireSphere(radius, spehereLineRatio, spehereLineRatio);
 #else
@@ -152,21 +174,41 @@ class celestialObj {
  *
  */
 class lighterObj {
+  private:
+    GLfloat pos[4] = {0, 0, 0, 1};
+
   public:
-    // lighterObj() { this->init(); }
-
-    void init(void) {
+    lighterObj(GLfloat x, GLfloat y, GLfloat z, const GLfloat *light_ambient,
+        const GLfloat *light_diffuse, const GLfloat *light_specular,
+        const GLfloat *mat_ambient, const GLfloat *mat_diffuse, const GLfloat *mat_specular,
+        const GLfloat mat_shininess) {
+        this->init(x, y, z, light_ambient, light_diffuse, light_specular, mat_ambient,
+            mat_diffuse, mat_specular, mat_shininess);
+    }
+    void init(GLfloat x, GLfloat y, GLfloat z, const GLfloat *light_ambient,
+        const GLfloat *light_diffuse, const GLfloat *light_specular,
+        const GLfloat *mat_ambient, const GLfloat *mat_diffuse, const GLfloat *mat_specular,
+        const GLfloat mat_shininess) {
         glClearColor(0.0, 0.0, 0.0, 0.0);
+        pos[0] = x;
+        pos[1] = y;
+        pos[2] = z;
 
-        glLightfv(GL_LIGHT1, GL_POSITION, light_position0);
+        glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+
         glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient);
         glLightfv(GL_LIGHT1, GL_DIFFUSE, light_diffuse);
         glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular);
 
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
         glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
         glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
         glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
+
+        glLightfv(GL_LIGHT0, GL_POSITION, pos);
+        glLightfv(GL_LIGHT1, GL_POSITION, pos);
     }
 
     static void enable(void) {
@@ -189,12 +231,13 @@ class lighterObj {
  * @class
  *
  */
-class carObj {
+class carObj : public celestialObj {
+
   public:
-    carObj() {}
+    carObj() : celestialObj(0, 6, 0, 2, 0, 0, 0, 0, 0) {}
     ~carObj() {}
 
-    void init(int surface_num) {
+    void initNurbs(int surface_num) {
         theNurb_vec.resize(surface_num);
         for (auto &theNurb : theNurb_vec) {
             theNurb = gluNewNurbsRenderer();
@@ -212,12 +255,11 @@ class carObj {
     }
 
     void drawUp(void) {
-        GLfloat ctl_pt[4][4][3] = {
-            {{-2.0, -2.0, 1.0}, {-0.5, -2.0, 0.0}, {0.5, -2.0, -2.0}, {2.0, -2.0, 2.0}},
-            {{-2.0, -0.5, 2.0}, {-0.5, -0.5, 1.5}, {0.5, -0.5, 0.0}, {2.0, -0.5, -2.0}},
-            {{-2.0, 0.5, 2.0}, {-0.5, 0.5, 1.0}, {0.5, 0.5, -1.0}, {2.0, 0.5, 1.0}},
-            {{-2.0, 2.0, -1.0}, {-0.5, 2.0, -1.0}, {0.5, 2.0, 0.0}, {2.0, 2.0, -0.5}}};
-        GLfloat knots[8] = {0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0};
+        GLfloat ctl_pt[4][4][3] = {{{1, 3, 0}, {1, 3, 0}, {3, 3, 0}, {8, 2.5, 0}},
+            {{0, 2, 0}, {1, 3, 2}, {7, 3, 3}, {9, 2, 0}},
+            {{0, 1, 0}, {1, 0, 2}, {7, 0, 3}, {9, 1, 0}},
+            {{1, 0, 0}, {1, 0, 0}, {3, 0, 0}, {8, 0.5, 0}}};
+        GLfloat knots[8]        = {0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0};
         gluBeginSurface(theNurb_vec[0]);
         gluNurbsSurface(theNurb_vec[0], 8, knots, 8, knots, 4 * 3, 3, &ctl_pt[0][0][0], 4, 4,
             GL_MAP2_VERTEX_3);
@@ -225,37 +267,101 @@ class carObj {
     }
 
     void drawDown(void) {
-        GLfloat ctl_pt[16][3] = {{-2.0, -2.0, -1.0}, {-0.5, -2.0, 0.0}, {0.5, -2.0, 2.0},
-            {2.0, -2.0, -2.0}, {-2.0, -0.5, -2.0}, {-0.5, -0.5, -1.5}, {0.5, -0.5, 0.0},
-            {2.0, -0.5, 2.0}, {-2.0, 0.5, -2.0}, {-0.5, 0.5, -1.0}, {0.5, 0.5, 1.0},
-            {2.0, 0.5, -1.0}, {-2.0, 2.0, 1.0}, {-0.5, 2.0, 1.0}, {0.5, 2.0, 0.0},
-            {2.0, 2.0, 0.5}};
-        GLfloat knots[8]      = {0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0};
-        glColor3f(1, 0, 1);
+        GLfloat ctl_pt[4][4][3] = {{{1, 0, 0}, {1, 0, 0}, {3, 0, 0}, {8, 0.5, 0}},
+            {{0, 1, 0}, {1, 0, -1}, {7, 0, -1.6}, {9, 1, 0}},
+            {{0, 2, 0}, {1, 3, -1}, {7, 3, -1.6}, {9, 2, 0}},
+            {{1, 3, 0}, {1, 3, 0}, {3, 3, 0}, {8, 2.5, 0}}};
+        GLfloat knots[8]        = {0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0};
         gluBeginSurface(theNurb_vec[1]);
-        gluNurbsSurface(theNurb_vec[1], 8, knots, 8, knots, 4 * 3, 3, &ctl_pt[0][0], 4, 4,
+
+        gluNurbsSurface(theNurb_vec[1], 8, knots, 8, knots, 4 * 3, 3, &ctl_pt[0][0][0], 4, 4,
             GL_MAP2_VERTEX_3);
         gluEndSurface(theNurb_vec[1]);
     }
 
-  private:
-    bool showPoints = 1;
+    void drawTires(void) {
+        // LF
+        glPushMatrix();
+        glTranslatef(7.5, 0.4, -0.1);
+        glRotatef(90, 1, 0, 0);
+        draw_cylinder(0.7, 0.2);
+        glPopMatrix();
 
+        // RF
+        glPushMatrix();
+        glTranslatef(7.5, 2.6, -0.1);
+        glRotatef(90, -1, 0, 0);
+        draw_cylinder(0.7, 0.2);
+        glPopMatrix();
+
+        // LB
+        glPushMatrix();
+        glTranslatef(2, -0.1, 0.1);
+        glRotatef(90, 1, 0, 0);
+        draw_cylinder(0.9, 0.4);
+        glPopMatrix();
+
+        // RB
+        glPushMatrix();
+        glTranslatef(2, 3.1, 0.1);
+        glRotatef(90, -1, 0, 0);
+        draw_cylinder(0.9, 0.4);
+        glPopMatrix();
+    }
+
+    void drawSpoiler(void) {
+        const GLfloat fan_y[] = {0.6, 2.4};
+        for (int i = 0; i < 2; i++) {
+            glBegin(GL_POLYGON);
+            glVertex3f(2, fan_y[i], 0.5);
+            glVertex3f(1, fan_y[i], 0.5);
+            glVertex3f(0.5, fan_y[i], 2);
+            glVertex3f(1.5, fan_y[i], 2);
+            glEnd();
+        }
+
+        glBegin(GL_POLYGON);
+        glVertex3f(0.5, fan_y[0] - 1, 2);
+        glVertex3f(0.5, fan_y[1] + 1, 2);
+        glVertex3f(1.5, fan_y[1] + 0.3, 2);
+        glVertex3f(1.5, fan_y[0] - 0.3, 2);
+        glEnd();
+    }
+
+    void drawCockpit(void) {
+        const GLfloat pt[8][3] = {{3, 0.5, 0.5}, {6.5, 0.8, 0.5}, {6.5, 2.2, 0.5},
+            {3, 2.5, 0.5}, {4.5, 1, 2.}, {5.5, 1.2, 1.8}, {5.5, 1.8, 1.8}, {4.5, 2, 2.}};
+        glBegin(GL_TRIANGLE_STRIP);
+        glVertex3f(pt[0][0], pt[0][1], pt[0][2]);
+        glVertex3f(pt[4][0], pt[4][1], pt[4][2]);
+        glVertex3f(pt[1][0], pt[1][1], pt[1][2]);
+        glVertex3f(pt[5][0], pt[5][1], pt[5][2]);
+        glVertex3f(pt[2][0], pt[2][1], pt[2][2]);
+        glVertex3f(pt[6][0], pt[6][1], pt[6][2]);
+        glVertex3f(pt[3][0], pt[3][1], pt[3][2]);
+        glVertex3f(pt[7][0], pt[7][1], pt[7][2]);
+        glVertex3f(pt[0][0], pt[0][1], pt[0][2]);
+        glVertex3f(pt[4][0], pt[4][1], pt[4][2]);
+        glEnd();
+        glBegin(GL_POLYGON);
+
+        glVertex3f(pt[4][0], pt[4][1], pt[4][2]);
+        glVertex3f(pt[5][0], pt[5][1], pt[5][2]);
+        glVertex3f(pt[6][0], pt[6][1], pt[6][2]);
+        glVertex3f(pt[7][0], pt[7][1], pt[7][2]);
+        glEnd();
+    }
+
+    void draw(void) {
+        drawUp();
+        drawDown();
+        drawTires();
+        drawSpoiler();
+        drawCockpit();
+    }
+
+  private:
     std::vector<GLUnurbsObj *> theNurb_vec;
 };
-
-/**
- * @class
- *
- */
-class car {};
-
-void gl_init(int argc, char **argv);
-void display(void);
-void reshape(int w, int h);
-void keyboard(unsigned char key, int x, int y);
-void mouseButton(int button, int state, int x, int y);
-void mouseMove(int x, int y);
-void idle();
 
 #endif
