@@ -19,8 +19,6 @@ const double PI  = 3.1425927;
 const double D2R = PI / 180;
 
 #define BITMAP_ID 0x4D42
-#define tex_weight 2048
-#define tex_height 1024
 
 /* Global Parameter Def */
 // #define USING_WIRE  // Comment to use glutSolidSphere
@@ -43,9 +41,9 @@ const GLfloat mat_diffuse_sun[]  = {.9, 0.3, 0.0, 0.9};
 const GLfloat mat_specular_sun[] = {0.2, 0.2, 0.2, 0.2};
 const GLfloat mat_shininess_sun  = 11.0;
 
-const GLfloat mat_ambient_earth[]  = {.2, .2, .6, .4};
+const GLfloat mat_ambient_earth[]  = {.6, .6, .6, .9};
 const GLfloat mat_diffuse_earth[]  = {.2, .2, .6, .6};
-const GLfloat mat_specular_earth[] = {.1, .1, .1, .2};
+const GLfloat mat_specular_earth[] = {.3, .3, .3, .2};
 const GLfloat mat_shininess_earth  = 5.0;
 
 const GLfloat mat_ambient_moon[]  = {.8, .8, .8, .4};
