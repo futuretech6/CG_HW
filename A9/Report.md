@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
     starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0);        // sun
     starVec.emplace_back(0.4, 3, -3, -2, 10., 23.5, 0, 0, 255);   // earth
     starVec.emplace_back(0.1, 0.8, 9, 3, 0, 0., 255, 255, 255);   // moon
-    starVec.emplace_back(1.1, 10, 1, 2, -45., 60., 0, 255, 0);    // jupyter
+    starVec.emplace_back(1.1, 10, 1, 2, -45., 60., 0, 255, 0);    // jupiter
     starVec.emplace_back(0.5, 1.9, 5, 3, 80., 10., 255, 255, 0);  // europa
     starVec.emplace_back(0.2, 1, 10, 3, 20., 90., 255, 0, 255);   // something
 

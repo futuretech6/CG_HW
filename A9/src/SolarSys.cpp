@@ -25,12 +25,15 @@ int celestial_num = 0;
 
 int main(int argc, char *argv[]) {
     // radius, distance, rotateV, revolveV, rotateTilt, revolveTilt, r, g, b
-    starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0);        // sun
-    starVec.emplace_back(0.4, 3, -3, -2, 10., 23.5, 0, 0, 255);   // earth
-    starVec.emplace_back(0.18, 0.8, 9, 3, 0, 0., 255, 255, 255);  // moon
-    starVec.emplace_back(0.8, 10, 2, 2, -45., 60., 0, 255, 0);    // jupyter
-    starVec.emplace_back(0.5, 2.9, 3, 3, 80., 10., 255, 255, 0);  // europa
-    starVec.emplace_back(0.2, 1, 5, 3, 20., 90., 255, 0, 255);    // satellite
+    starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0, "./texture/2k_sun.bmp");  // sun
+    starVec.emplace_back(
+        0.4, 3, -3, -2, 10., 23.5, 0, 0, 255, "./texture/2k_earth_daymap.bmp");  // earth
+    starVec.emplace_back(
+        0.18, 0.8, 9, 3, 0, 0., 255, 255, 255, "./texture/2k_moon.bmp");  // moon
+    starVec.emplace_back(
+        0.8, 10, 2, 2, -45., 60., 0, 255, 0, "./texture/2k_jupiter.bmp");  // jupiter
+    starVec.emplace_back(0.5, 2.9, 3, 3, 80., 10., 255, 255, 0);           // europa
+    starVec.emplace_back(0.2, 1, 5, 3, 20., 90., 255, 0, 255);             // satellite
 
     // car.initNurbs(2);
 
@@ -84,7 +87,9 @@ void display() {
         mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
     lighter_point.enable();
     glPushMatrix();
+    starVec[1].tex_on();
     starVec[1].draw();
+    starVec[1].tex_off();
     glPopMatrix();
     lighter_point.disable();
 
@@ -94,16 +99,20 @@ void display() {
     lighter_point.enable();
     glPushMatrix();
     starVec[1].draw();
+    starVec[2].tex_on();
     starVec[2].draw();
+    starVec[2].tex_off();
     glPopMatrix();
     lighter_point.disable();
 
-    // Jupyter
-    lighter_point.reset(mat_ambient_jupyter, mat_diffuse_jupyter, mat_specular_jupyter,
-        mat_shininess_jupyter);
+    // jupiter
+    lighter_point.reset(mat_ambient_jupiter, mat_diffuse_jupiter, mat_specular_jupiter,
+        mat_shininess_jupiter);
     lighter_point.enable();
     glPushMatrix();
+    starVec[3].tex_on();
     starVec[3].draw();
+    starVec[3].tex_off();
     glPopMatrix();
     lighter_point.disable();
 
@@ -124,9 +133,7 @@ void display() {
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
-    starVec[5].tex_on();
     starVec[5].draw();
-    starVec[5].tex_off();
     lighter_point.disable();
     glPopMatrix();
 
@@ -250,3 +257,50 @@ void idle() {
 //     }
 //     glEnd();
 // }
+
+unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader) {
+    FILE *filePtr;                      // 文件指针
+    BITMAPFILEHEADER bitmapFileHeader;  // bitmap文件头
+    unsigned char *bitmapImage;         // bitmap图像数据
+
+    fopen_s(&filePtr, filename, "rb");  // 以“二进制+读”模式打开文件filename
+    if (filePtr == NULL)
+        return NULL;
+    // 读入bitmap文件图
+    fread(&bitmapFileHeader, sizeof(BITMAPFILEHEADER), 1, filePtr);
+    // 验证是否为bitmap文件
+    if (bitmapFileHeader.bfType != BITMAP_ID) {
+        fprintf(stderr, "Error in LoadBitmapFile: the file is not a bitmap file\n");
+        return NULL;
+    }
+
+    // 读入bitmap信息头
+    fread(bitmapInfoHeader, sizeof(BITMAPINFOHEADER), 1, filePtr);
+    // 将文件指针移至bitmap数据
+    fseek(filePtr, bitmapFileHeader.bfOffBits, SEEK_SET);
+    // 为装载图像数据创建足够的内存
+    bitmapImage = new unsigned char[bitmapInfoHeader->biSizeImage];
+    // 验证内存是否创建成功
+    if (!bitmapImage) {
+        fprintf(stderr, "Error in LoadBitmapFile: memory error\n");
+        return NULL;
+    }
+
+    // 读入bitmap图像数据
+    fread(bitmapImage, 1, bitmapInfoHeader->biSizeImage, filePtr);
+    // 确认读入成功
+    if (bitmapImage == NULL) {
+        fprintf(stderr, "Error in LoadBitmapFile: memory error\n");
+        return NULL;
+    }
+
+    //由于bitmap中保存的格式是BGR，下面交换R和B的值，得到RGB格式
+    for (int imageIdx = 0; imageIdx < bitmapInfoHeader->biSizeImage; imageIdx += 3) {
+        unsigned char tempRGB     = bitmapImage[imageIdx];
+        bitmapImage[imageIdx]     = bitmapImage[imageIdx + 2];
+        bitmapImage[imageIdx + 2] = tempRGB;
+    }
+    // 关闭bitmap图像文件
+    fclose(filePtr);
+    return bitmapImage;
+}

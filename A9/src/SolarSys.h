@@ -18,6 +18,7 @@
 const double PI  = 3.1425927;
 const double D2R = PI / 180;
 
+#define BITMAP_ID 0x4D42
 #define tex_weight 2048
 #define tex_height 1024
 
@@ -52,10 +53,10 @@ const GLfloat mat_diffuse_moon[]  = {.8, .8, .8, .6};
 const GLfloat mat_specular_moon[] = {.1, .1, .1, .2};
 const GLfloat mat_shininess_moon  = 3.0;
 
-const GLfloat mat_ambient_jupyter[]  = {.7, .5, .5, .4};
-const GLfloat mat_diffuse_jupyter[]  = {.7, .5, .5, .4};
-const GLfloat mat_specular_jupyter[] = {.1, .1, .1, .8};
-const GLfloat mat_shininess_jupyter  = 3.0;
+const GLfloat mat_ambient_jupiter[]  = {.7, .5, .5, .4};
+const GLfloat mat_diffuse_jupiter[]  = {.7, .5, .5, .4};
+const GLfloat mat_specular_jupiter[] = {.1, .1, .1, .8};
+const GLfloat mat_shininess_jupiter  = 3.0;
 
 const GLfloat mat_ambient_europa[]  = {.6, .5, .3, .4};
 const GLfloat mat_diffuse_europa[]  = {.6, .5, .3, .4};
@@ -133,6 +134,7 @@ class cameraObj {
 };
 
 extern int celestial_num;
+extern unsigned char *LoadBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader);
 /**
  * @class an implenetation of celestial object include sun, planet and satellite
  * and other smaller objects
@@ -156,12 +158,13 @@ class celestialObj {
     bool enable_tex = 0;
     GLuint tex;
     GLUquadric *sphere;
-    GLubyte tex_data[tex_weight][tex_height][3];
+    BITMAPINFOHEADER bitmapInfoHeader;  // bitmap信息头
+    unsigned char *bitmapData;          // 纹理数据
 
   public:
     // Functions
     celestialObj(float radius, float distance, float rotateV, float revolveV,
-        float rotateTilt, float revolveTilt, int r, int g, int b, const char tex_path[] = "")
+        float rotateTilt, float revolveTilt, int r, int g, int b, const char *tex_path = NULL)
         : radius(radius),
           distance(distance),
           rotateV(rotateV / fluentRatio),
@@ -170,25 +173,33 @@ class celestialObj {
           revolveTilt(revolveTilt),
           colors(std::make_tuple(r, g, b)),
           sphere(gluNewQuadric()) {
-        load_tex(tex_path);
+        if (tex_path)
+            load_tex(const_cast<char *>(tex_path));
     }
 
-    void load_tex(const char *tex_path) {
-        for (int y = 0; y < 255; y++) {
-            for (int x = 0; x < 255; x++) {
-                unsigned char *p = tex_data[y][x];
-                p[0] = p[1] = p[2] = (x ^ y) & 8 ? 255 : 120;
-            }
-        }
+    void load_tex(char *const tex_path) {
+        bitmapData = LoadBitmapFile(tex_path, &bitmapInfoHeader);
+        std::cout << (void *)bitmapData;
     }
 
     void tex_on(void) {
         enable_tex = 1;
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE,
-            (const GLvoid *)tex_data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        // 指定当前纹理的放大/缩小过滤方式
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D,
+            0,                          // mipmap层次(通常为，表示最上层)
+            GL_RGB,                     //我们希望该纹理有红、绿、蓝数据
+            bitmapInfoHeader.biWidth,   //纹理宽带，必须是n，若有边框+2
+            bitmapInfoHeader.biHeight,  //纹理高度，必须是n，若有边框+2
+            0,                          //边框(0=无边框, 1=有边框)
+            GL_RGB,                     // bitmap数据的格式
+            GL_UNSIGNED_BYTE,           //每个颜色数据的类型
+            bitmapData);                // bitmap数据指针
+
         glEnable(GL_TEXTURE_2D);
     }
 
@@ -217,17 +228,11 @@ class celestialObj {
         //         glutSolidSphere(radius, spehereLineRatio, spehereLineRatio);
         // #endif
         gluQuadricDrawStyle(sphere, GLU_FILL);
-        if (enable_tex)
-            glBindTexture(GL_TEXTURE_2D, tex);
+        // if (enable_tex)
+        glBindTexture(GL_TEXTURE_2D, tex);
         gluQuadricTexture(sphere, GL_TRUE);
         gluQuadricNormals(sphere, GLU_SMOOTH);
         gluSphere(sphere, radius, spehereLineRatio, spehereLineRatio);
-
-        // gluQuadricDrawStyle(sphere, GLU_FILL);
-        // glBindTexture(GL_TEXTURE_2D, tex);
-        // gluQuadricTexture(sphere, GL_TRUE);
-        // gluQuadricNormals(sphere, GLU_SMOOTH);
-        // gluSphere(sphere, radius, spehereLineRatio, spehereLineRatio);
     }
 
     void rotate() {
