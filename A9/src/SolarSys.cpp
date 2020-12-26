@@ -2,32 +2,39 @@
  * @file SolarSys.cpp
  * @author Scott Chen
  * @em 3180103012@zju.edu.cn
- * @brief This is an implementation to A4 of CG by prof. Hongzhi Wu
+ * @brief This is an implementation to A8 of CG by prof. Hongzhi Wu
  *
- * @ref http://cse.csusb.edu/tongyu/courses/cs621/notes/color.php
- *
+ * @ref
+ * https://cpp.hotexamples.com/examples/-/-/glTexImage2D/cpp-glteximage2d-function-examples.html
+ * @ref https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glGenTextures.xml
+ * @ref https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+ * @ref https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glLoadIdentity.xml
  */
 #include "SolarSys.h"
 
 cameraObj camera;
 std::vector<celestialObj> starVec;
 
-lighterObj lighter1, lighter2;
-carObj car;
+lighterObj lighter_point(GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular);
+
+lighterObj lighter_parallel(
+    GL_LIGHT0, 0, 0, 0, light_ambient, light_diffuse, light_specular, 0);
+// carObj car;
+
+int celestial_num = 0;
 
 int main(int argc, char *argv[]) {
     // radius, distance, rotateV, revolveV, rotateTilt, revolveTilt, r, g, b
     starVec.emplace_back(2, 0, 0, 0.5, 0., 0., 255, 0, 0);        // sun
     starVec.emplace_back(0.4, 3, -3, -2, 10., 23.5, 0, 0, 255);   // earth
-    starVec.emplace_back(0.1, 0.8, 9, 3, 0, 0., 255, 255, 255);   // moon
-    starVec.emplace_back(1.1, 10, 1, 2, -45., 60., 0, 255, 0);    // jupyter
-    starVec.emplace_back(0.5, 1.9, 5, 3, 80., 10., 255, 255, 0);  // europa
-    starVec.emplace_back(0.2, 1, 10, 3, 20., 90., 255, 0, 255);   // something
+    starVec.emplace_back(0.18, 0.8, 9, 3, 0, 0., 255, 255, 255);  // moon
+    starVec.emplace_back(0.8, 10, 2, 2, -45., 60., 0, 255, 0);    // jupyter
+    starVec.emplace_back(0.5, 2.9, 3, 3, 80., 10., 255, 255, 0);  // europa
+    starVec.emplace_back(0.2, 1, 5, 3, 20., 90., 255, 0, 255);    // satellite
 
-    car.initNurbs(2);
+    // car.initNurbs(2);
 
     gl_init(argc, argv);
-    lighter1.init(0, 0, 0);  // Must be placed after Shade model set
 
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -53,38 +60,92 @@ void gl_init(int argc, char **argv) {
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+
+    unsigned char data[256][256][3];
+    for (int y = 0; y < 255; y++) {
+        for (int x = 0; x < 255; x++) {
+            unsigned char *p = data[y][x];
+            p[0] = p[1] = p[2] = (x ^ y) & 8 ? 120 : 255;
+        }
+    }
+    glGenTextures(1, &global_tex);
+    glBindTexture(GL_TEXTURE_2D, global_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE,
+        (const GLvoid *)data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    global_sphere = gluNewQuadric();
+    glEnable(GL_TEXTURE_2D);
 }
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    lighter1.enable();
-
+    // Sun
     glPushMatrix();
+    lighter_parallel.reset(
+        mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
+    lighter_parallel.enable();
     starVec[0].draw();
+    lighter_parallel.disable();
     glPopMatrix();
 
+    // Earth & Moon
+    lighter_point.reset(
+        mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
+    lighter_point.enable();
+    glPushMatrix();
+    starVec[1].draw();
+    glPopMatrix();
+    lighter_point.disable();
+
+    lighter_point.reset(
+        mat_ambient_moon, mat_diffuse_moon, mat_specular_moon, mat_shininess_moon);
+    lighter_point.enable();
     glPushMatrix();
     starVec[1].draw();
     starVec[2].draw();
     glPopMatrix();
+    lighter_point.disable();
 
+    // Jupyter
+    lighter_point.reset(mat_ambient_jupyter, mat_diffuse_jupyter, mat_specular_jupyter,
+        mat_shininess_jupyter);
+    lighter_point.enable();
+    glPushMatrix();
+    starVec[3].draw();
+    glPopMatrix();
+    lighter_point.disable();
+
+    // Europa
+    lighter_point.reset(
+        mat_ambient_europa, mat_diffuse_europa, mat_specular_europa, mat_shininess_europa);
+    lighter_point.enable();
+    glPushMatrix();
+    starVec[3].draw();
+    starVec[4].draw();
+    glPopMatrix();
+    lighter_point.disable();
+
+    // Satellite
+    lighter_point.reset(mat_ambient_satellite, mat_diffuse_satellite, mat_specular_satellite,
+        mat_shininess_satellite);
+    lighter_point.enable();
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
     starVec[5].draw();
+    lighter_point.disable();
     glPopMatrix();
 
-    glPushMatrix();
-    car.trans();
-    glScalef(0.5, 0.5, 0.5);
-    glTranslatef(-4.5, -1.5, 0);
-    car.draw();
-    glPopMatrix();
+    // glPushMatrix();
+    // car.trans();
+    // glScalef(0.5, 0.5, 0.5);
+    // glTranslatef(-4.5, -1.5, 0);
+    // car.draw();
+    // glPopMatrix();
 
-    lighter1.disable();
-
-    glFlush();
+    // glFlush();
 
     glutSwapBuffers();
 }
@@ -156,44 +217,44 @@ void mouseMove(int x, int y) {
 void idle() {
     for (auto &i : starVec)
         i.rotate();
-    car.rotate();
+    // car.rotate();
     glutPostRedisplay();
     Sleep(30 / fluentRatio);
 }
 
-void draw_cylinder(GLfloat radius, GLfloat height, GLubyte R, GLubyte G, GLubyte B) {
-    GLfloat x                    = 0.0;
-    GLfloat y                    = 0.0;
-    const GLfloat angle_stepsize = 0.1;
+// void draw_cylinder(GLfloat radius, GLfloat height, GLubyte R, GLubyte G, GLubyte B) {
+//     GLfloat x                    = 0.0;
+//     GLfloat y                    = 0.0;
+//     const GLfloat angle_stepsize = 0.1;
 
-    /** Draw the tube */
-    glColor3ub(R, G, B);
-    glBegin(GL_QUAD_STRIP);
-    for (GLfloat angle = 0.0; angle <= 2 * PI + angle_stepsize; angle += angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, 0.5 * height);
-        glVertex3f(x, y, -0.5 * height);
-    }
-    glEnd();
+//     /** Draw the tube */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_QUAD_STRIP);
+//     for (GLfloat angle = 0.0; angle <= 2 * PI + angle_stepsize; angle += angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, 0.5 * height);
+//         glVertex3f(x, y, -0.5 * height);
+//     }
+//     glEnd();
 
-    /** Draw the circle on top of cylinder */
-    glColor3ub(R, G, B);
-    glBegin(GL_POLYGON);
-    for (GLfloat angle = 0.0; angle <= 2 * PI; angle += angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, 0.5 * height);
-    }
-    glEnd();
+//     /** Draw the circle on top of cylinder */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_POLYGON);
+//     for (GLfloat angle = 0.0; angle <= 2 * PI; angle += angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, 0.5 * height);
+//     }
+//     glEnd();
 
-    /** Draw the circle on bottom of cylinder */
-    glColor3ub(R, G, B);
-    glBegin(GL_POLYGON);
-    for (GLfloat angle = 2 * PI; angle >= 0; angle -= angle_stepsize) {
-        x = radius * cos(angle);
-        y = radius * sin(angle);
-        glVertex3f(x, y, -0.5 * height);
-    }
-    glEnd();
-}
+//     /** Draw the circle on bottom of cylinder */
+//     glColor3ub(R, G, B);
+//     glBegin(GL_POLYGON);
+//     for (GLfloat angle = 2 * PI; angle >= 0; angle -= angle_stepsize) {
+//         x = radius * cos(angle);
+//         y = radius * sin(angle);
+//         glVertex3f(x, y, -0.5 * height);
+//     }
+//     glEnd();
+// }

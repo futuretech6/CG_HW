@@ -87,6 +87,7 @@ eyez += flag * cam_move_step * sin(polarAngle * D2R);
     1. 对于NURBS曲面，可以调换控制点的顺序，让原本的内外平面交换而形状不变
     2. 如果一定要双面，需要同时修改LIGHT0和LIGHT1
     3. 注意：`glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);`并不能起作用
+3. 一开始用了面向对象的贴图方案，直接在构造函数里面初始化了贴图，然而一直不行，后来发现顺序不对，得gl init完了init才行，因此改了改贴图初始化的位置
 
 ### 心得
 

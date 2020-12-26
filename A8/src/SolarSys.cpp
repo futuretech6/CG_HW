@@ -2,7 +2,7 @@
  * @file SolarSys.cpp
  * @author Scott Chen
  * @em 3180103012@zju.edu.cn
- * @brief This is an implementation to A4 of CG by prof. Hongzhi Wu
+ * @brief This is an implementation to A8 of CG by prof. Hongzhi Wu
  *
  * @ref http://cse.csusb.edu/tongyu/courses/cs621/notes/color.php
  * @ref https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glLight.xml
