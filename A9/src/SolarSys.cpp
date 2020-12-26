@@ -36,6 +36,9 @@ int main(int argc, char *argv[]) {
 
     gl_init(argc, argv);
 
+    // for (auto &i : starVec)
+    //     i.tex_on();
+
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     glutDisplayFunc(display);
@@ -60,22 +63,6 @@ void gl_init(int argc, char **argv) {
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
-    unsigned char data[256][256][3];
-    for (int y = 0; y < 255; y++) {
-        for (int x = 0; x < 255; x++) {
-            unsigned char *p = data[y][x];
-            p[0] = p[1] = p[2] = (x ^ y) & 8 ? 120 : 255;
-        }
-    }
-    glGenTextures(1, &global_tex);
-    glBindTexture(GL_TEXTURE_2D, global_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE,
-        (const GLvoid *)data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    global_sphere = gluNewQuadric();
-    glEnable(GL_TEXTURE_2D);
 }
 
 void display() {
@@ -86,11 +73,13 @@ void display() {
     lighter_parallel.reset(
         mat_ambient_sun, mat_diffuse_sun, mat_specular_sun, mat_shininess_sun);
     lighter_parallel.enable();
+    starVec[0].tex_on();
     starVec[0].draw();
+    starVec[0].tex_off();
     lighter_parallel.disable();
     glPopMatrix();
 
-    // Earth & Moon
+    // Earth
     lighter_point.reset(
         mat_ambient_earth, mat_diffuse_earth, mat_specular_earth, mat_shininess_earth);
     lighter_point.enable();
@@ -99,6 +88,7 @@ void display() {
     glPopMatrix();
     lighter_point.disable();
 
+    // Moon
     lighter_point.reset(
         mat_ambient_moon, mat_diffuse_moon, mat_specular_moon, mat_shininess_moon);
     lighter_point.enable();
@@ -134,7 +124,9 @@ void display() {
     glPushMatrix();
     starVec[3].draw();
     starVec[4].draw();
+    starVec[5].tex_on();
     starVec[5].draw();
+    starVec[5].tex_off();
     lighter_point.disable();
     glPopMatrix();
 
@@ -215,8 +207,8 @@ void mouseMove(int x, int y) {
 }
 
 void idle() {
-    for (auto &i : starVec)
-        i.rotate();
+    // for (auto &i : starVec)
+    //     i.rotate();
     // car.rotate();
     glutPostRedisplay();
     Sleep(30 / fluentRatio);

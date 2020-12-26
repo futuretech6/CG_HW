@@ -18,6 +18,9 @@
 const double PI  = 3.1425927;
 const double D2R = PI / 180;
 
+#define tex_weight 2048
+#define tex_height 1024
+
 /* Global Parameter Def */
 // #define USING_WIRE  // Comment to use glutSolidSphere
 
@@ -63,10 +66,6 @@ const GLfloat mat_ambient_satellite[]  = {1, .5, .5, .4};
 const GLfloat mat_diffuse_satellite[]  = {1, .5, .5, .4};
 const GLfloat mat_specular_satellite[] = {.6, .6, .6, .2};
 const GLfloat mat_shininess_satellite  = 1.0;
-
-
-    GLuint global_tex;
-    GLUquadric *global_sphere;
 
 void gl_init(int argc, char **argv);
 void display(void);
@@ -153,42 +152,50 @@ class celestialObj {
     float rotateAngle  = 0;
     float revolveAngle = 0;
 
-    // Sphere Param
+    // Texture Param
+    bool enable_tex = 0;
     GLuint tex;
     GLUquadric *sphere;
-
-    void make_tex(void) {
-        GLubyte data[256][256][3];
-        for (int y = 0; y < 255; y++) {
-            for (int x = 0; x < 255; x++) {
-                unsigned char *p = data[y][x];
-                p[0] = p[1] = p[2] = (x ^ y) & 8 ? 255 : 120;
-            }
-        }
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE,
-            (const GLvoid *)data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
+    GLubyte tex_data[tex_weight][tex_height][3];
 
   public:
     // Functions
     celestialObj(float radius, float distance, float rotateV, float revolveV,
-        float rotateTilt, float revolveTilt, int r, int g, int b)
+        float rotateTilt, float revolveTilt, int r, int g, int b, const char tex_path[] = "")
         : radius(radius),
           distance(distance),
           rotateV(rotateV / fluentRatio),
           revolveV(revolveV / fluentRatio),
           rotateTilt(rotateTilt),
           revolveTilt(revolveTilt),
-          colors(std::make_tuple(r, g, b)) {
+          colors(std::make_tuple(r, g, b)),
+          sphere(gluNewQuadric()) {
+        load_tex(tex_path);
+    }
 
-        make_tex();
-        sphere = gluNewQuadric();
-    glEnable(GL_TEXTURE_2D);
-    };
+    void load_tex(const char *tex_path) {
+        for (int y = 0; y < 255; y++) {
+            for (int x = 0; x < 255; x++) {
+                unsigned char *p = tex_data[y][x];
+                p[0] = p[1] = p[2] = (x ^ y) & 8 ? 255 : 120;
+            }
+        }
+    }
+
+    void tex_on(void) {
+        enable_tex = 1;
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE,
+            (const GLvoid *)tex_data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glEnable(GL_TEXTURE_2D);
+    }
+
+    void tex_off(void) {
+        enable_tex = 0;
+        glDisable(GL_TEXTURE_2D);
+    }
 
     void trans(void) {
         using namespace std;
@@ -209,12 +216,12 @@ class celestialObj {
         // #else
         //         glutSolidSphere(radius, spehereLineRatio, spehereLineRatio);
         // #endif
-
-        gluQuadricDrawStyle(global_sphere, GLU_FILL);
-        glBindTexture(GL_TEXTURE_2D, global_tex);
-        gluQuadricTexture(global_sphere, GL_TRUE);
-        gluQuadricNormals(global_sphere, GLU_SMOOTH);
-        gluSphere(global_sphere, radius, spehereLineRatio, spehereLineRatio);
+        gluQuadricDrawStyle(sphere, GLU_FILL);
+        if (enable_tex)
+            glBindTexture(GL_TEXTURE_2D, tex);
+        gluQuadricTexture(sphere, GL_TRUE);
+        gluQuadricNormals(sphere, GLU_SMOOTH);
+        gluSphere(sphere, radius, spehereLineRatio, spehereLineRatio);
 
         // gluQuadricDrawStyle(sphere, GLU_FILL);
         // glBindTexture(GL_TEXTURE_2D, tex);
